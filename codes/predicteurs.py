@@ -64,8 +64,20 @@ class Predict:
 
     def RandomForest(self):
         """Random Forest"""
-        # Split dataset into test / training
-        forest = RandomForestClassifier(max_depth=7, n_estimators=100)
+        # Check and determine best max depth
+        min_depth = 4
+        max_depth = 10
+        scores = []
+        depth_tree = np.arange(min_depth, max_depth)
+        for i in depth_tree:
+            grid = {'max_depth': i}
+            model = RandomForestClassifier(**grid)
+            model.fit(self.X_train, self.y_train)
+            scores.append(model.score(self.X_test, self.y_test))
+
+        # Define the best model
+        forest = RandomForestClassifier(max_depth=np.argmax(scores) + min_depth,
+                                        n_estimators=100)
         forest.fit(self.X_train, self.y_train)
         return forest
 
@@ -90,13 +102,48 @@ class Predict:
                                                       max_leaf_nodes=None,
                                                       warm_start=False,
                                                       presort='auto')
-        GradientBoosting.fit(self.X_train, self.y_train)
-        return GradientBoosting
+
+        # Check and determine best max depth
+        min_depth = 4
+        max_depth = 8
+        scores = []
+        depth_tree = np.arange(min_depth, max_depth)
+        for i in depth_tree:
+            grid = {'max_depth': i}
+            model = GradientBoosting(**grid)
+            model.fit(self.X_train, self.y_train)
+            scores.append(model.score(self.X_test, self.y_test))
+
+        # Return the best max depth
+        grid = {'max_depth': np.argmax(scores) + min_depth}
+        model = GradientBoosting(**grid)
+        model.fit(self.X_train, self.y_train)
+        return model
 
     def XgBoost(self):
         """GradientBoosting"""
-        # Split dataset into test / training
+        # Define parameters
+        param = {}
+        param['booster'] = 'gbtree'
+        param['objective'] = 'binary:logistic'
+
+        # Define the model
         model = XGBClassifier()
+
+        # Check and determine best max depth
+        min_depth = 4
+        max_depth = 10
+        scores = []
+        depth_tree = np.arange(min_depth, max_depth)
+        for i in depth_tree:
+            grid = {'max_depth': i}
+            model = XGBClassifier(**grid)
+            model.fit(self.X_train, self.y_train)
+            scores.append(model.score(self.X_test, self.y_test))
+
+        # Return the best max depth
+        grid = {'max_depth': np.argmax(scores) + min_depth}
+        model = XGBClassifier(**grid)
         model.fit(self.X_train, self.y_train)
         return model
 
