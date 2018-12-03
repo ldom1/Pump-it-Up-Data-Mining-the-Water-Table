@@ -11,6 +11,7 @@ import numpy as np
 from codes.map_design import displayMap
 from codes.predicteurs import Predict
 from codes.data_processing import processData
+from imblearn.over_sampling import SMOTE
 
 # Projet
 path = os.getcwd()
@@ -81,110 +82,56 @@ try:
 except ValueError:
     X = transformed
 
-"""TEST""" 
-# Transform 3 classes problem in 2 classes problem
-# class 0: functional
-# class 1: functional needs repair
-# class 2: non functional
-data = X
-data['labels'] = y
-
-# We include functional needs repair in functional and predict
-from sklearn.ensemble import RandomForestClassifier
-import random as rd
-from sklearn import model_selection
-from imblearn.over_sampling import SMOTE
-import matplotlib.pyplot as plt
-
-data['Class 1'] = data['labels'].apply(lambda x: 2 if x == 2 else 0)
-X_1 = data[data.columns[:-2]]
-y_1 = data['Class 1']
-forest = RandomForestClassifier(max_depth=4, n_estimators=100)
-r_s = rd.randint(0, 100)
-(X_train, X_test,
- y_train, y_test) = model_selection.train_test_split(X_1, y_1,
-                                                     test_size=0.33,
-                                                     random_state=r_s)
-forest.fit(X_train, y_train)
-y1_pred = forest.predict(X_1)
-data['Class 1 - pred'] = y1_pred
-
-data_2 = data[data['labels'] != 2]
-X_2 = data_2[data_2.columns[:-3]]
-y_2 = data_2['labels']
-
-plt.hist(y_2)
-
-(X_train, X_test,
- y_train, y_test) = model_selection.train_test_split(X_2, y_2,
-                                                     test_size=0.33,
-                                                     random_state=r_s)
-
-# Unbalanced data
-sm = SMOTE(random_state=2)
-X_train_res, y_train_res = sm.fit_sample(X_train, y_train.ravel())
-plt.hist(y_train_res)
-
-forest.fit(X_train_res, y_train_res)
-y2_pred = forest.predict(X_2)
-data_2['Class 2'] = y2_pred
-data_2 = data_2[['Class 2']]
-
-# result
-result = pd.DataFrame()
-result['labels'] = y
-result['Class 1'] = np.array(data['Class 1 - pred'])
-result = pd.merge(result, data_2, left_index=True, right_index=True,
-                  how='outer')
-
-
-# Definition de la prédiction
-def concat_predict(class_1, class_2):
-    if pd.isna(class_2) == True:
-        return int(class_1)
-    else:
-        return int(class_2)
-
-
-result['pred'] = result.apply(lambda row: concat_predict(row['Class 1'],
-                                                         row['Class 2']),
-                              axis=1)
-
-# Erreur
-err = 1 - np.sum(result['pred'] != result['labels'])/len(result['pred'])
-
-"""FIN TEST"""
-
 # Predict
-predicteur = Predict(X, y, code)
+sm = SMOTE(random_state=2)
+X_sm, y_sm = sm.fit_sample(X, y.ravel())
+predicteur = Predict(X_sm, y_sm)
 
-XGBoost_predictions = predicteur.make_prediction('XgBoost', submit)
-RandomForest_predictions = predicteur.make_prediction('RandomForest', submit)
+ArbreDecision_predictions = predicteur.make_prediction('ArbreDecision',
+                                                       np.array(submit))
+XGBoost_predictions = predicteur.make_prediction('XgBoost', np.array(submit))
+RandomForest_predictions = predicteur.make_prediction('RandomForest',
+                                                      np.array(submit))
 GradientBoosting_predictions = predicteur.make_prediction('GradientBoosting',
-                                                          submit)
+                                                          np.array(submit))
 NeuralNetwork_predictions = predicteur.make_prediction('NeuralNetwork',
-                                                       submit)
+                                                       np.array(submit))
+
+# Scores
+print('Score Arbre de décision: ', ArbreDecision_predictions[1])
+print('Score XGBoost: ', XGBoost_predictions[1])
+print('Score GradientBoosting: ', GradientBoosting_predictions[1])
+print('Score RandomForest: ', RandomForest_predictions[1])
+
 # Submissions
 # Prédiction du dataset - Submit
 path_submit = path + '/submissions'
+
+# ArbreDecision
+to_submit = pd.DataFrame()
+to_submit['id'] = X_submit['id']
+to_submit['status_group'] = code.inverse_transform(ArbreDecision_predictions[0])
+# CSV
+to_submit.to_csv(path_submit + '/Submissions_arbre.csv', sep=",",
+                 header=True, index=False)
 # XGBoost
 to_submit = pd.DataFrame()
 to_submit['id'] = X_submit['id']
-to_submit['status_group'] = XGBoost_predictions[0]
+to_submit['status_group'] = code.inverse_transform(XGBoost_predictions[0])
 # CSV
 to_submit.to_csv(path_submit + '/Submissions_xgboost.csv', sep=",",
                  header=True, index=False)
 # RandomForest
 to_submit = pd.DataFrame()
 to_submit['id'] = X_submit['id']
-to_submit['status_group'] = RandomForest_predictions[0]
+to_submit['status_group'] = code.inverse_transform(RandomForest_predictions[0])
 # CSV
 to_submit.to_csv(path_submit + '/Submissions_rf.csv', sep=",", header=True,
                  index=False)
 # GradinBoosting
 to_submit = pd.DataFrame()
 to_submit['id'] = X_submit['id']
-to_submit['status_group'] = GradientBoosting_predictions[0]
+to_submit['status_group'] = code.inverse_transform(GradientBoosting_predictions[0])
 # CSV
 to_submit.to_csv(path_submit + '/Submissions_gboost.csv', sep=",", header=True,
                  index=False)

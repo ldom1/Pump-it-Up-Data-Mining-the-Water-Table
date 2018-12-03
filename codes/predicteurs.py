@@ -6,6 +6,7 @@ Created on Tue Nov 27 21:48:16 2018
 @author: louisgiron
 """
 import numpy as np
+from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn import model_selection
@@ -13,11 +14,12 @@ import random as rd
 import tensorflow as tf
 from tensorflow import keras
 from xgboost import XGBClassifier
+from sklearn.model_selection import GridSearchCV
 
 
 class Predict:
 
-    def __init__(self, X, y, code):
+    def __init__(self, X, y):
         """class prediction"""
         r_s = rd.randint(0, 100)
         (X_train, X_test,
@@ -28,24 +30,26 @@ class Predict:
         self.X_test = X_test
         self.y_train = y_train
         self.y_test = y_test
-        self.code = code
 
     def make_prediction(self, predictor, X_to_predict):
+
+        if predictor == 'ArbreDecision':
+            pred = Predict.ArbreDecision(self).predict(X_to_predict)
+            score = Predict.ArbreDecision(self).score(self.X_test, self.y_test)
+            return pred, score
+
         if predictor == 'RandomForest':
             pred = Predict.RandomForest(self).predict(X_to_predict)
-            pred = self.code.inverse_transform(pred)
             score = Predict.RandomForest(self).score(self.X_test, self.y_test)
             return pred, score
 
         if predictor == 'GradientBoosting':
             pred = Predict.RandomForest(self).predict(X_to_predict)
-            pred = self.code.inverse_transform(pred)
             score = Predict.RandomForest(self).score(self.X_test, self.y_test)
             return pred, score
 
         if predictor == 'XgBoost':
             pred = Predict.XgBoost(self).predict(X_to_predict)
-            pred = self.code.inverse_transform(pred)
             score = Predict.XgBoost(self).score(self.X_test, self.y_test)
             return pred, score
 
@@ -56,28 +60,41 @@ class Predict:
             test_labels = np.array(self.y_test)
             pred = Predict.NeuralNetwork(self).predict(X_to_predict)
             pred = np.argmax(pred, axis=1)
-            pred = self.code.inverse_transform(pred)
             (test_loss,
              test_acc) = Predict.NeuralNetwork(self).evaluate(test_data,
                                                               test_labels)
             return pred, test_acc
 
+    def ArbreDecision(self):
+        """Random Forest"""
+        # Check and determine best max depth
+        min_depth = 4
+        max_depth = 15
+
+        parameters = {'max_depth': np.arange(min_depth, max_depth)}
+        clf = GridSearchCV(tree.DecisionTreeClassifier(), parameters, cv=3,
+                           n_jobs=-1)
+        clf.fit(X=self.X_train, y=self.y_train)
+
+        # Define the best model
+        tree_model = tree.DecisionTreeClassifier(**clf.best_params_)
+        tree_model.fit(self.X_train, self.y_train)
+        return tree_model
+
     def RandomForest(self):
         """Random Forest"""
         # Check and determine best max depth
         min_depth = 4
-        max_depth = 10
-        scores = []
-        depth_tree = np.arange(min_depth, max_depth)
-        for i in depth_tree:
-            grid = {'max_depth': i}
-            model = RandomForestClassifier(**grid)
-            model.fit(self.X_train, self.y_train)
-            scores.append(model.score(self.X_test, self.y_test))
+        max_depth = 15
+
+        parameters = {'max_depth': np.arange(min_depth, max_depth),
+                      'n_estimators': np.arange(50, 200, 50)}
+        forest = GridSearchCV(RandomForestClassifier(), parameters, cv=3,
+                              n_jobs=-1)
+        forest.fit(X=self.X_train, y=self.y_train)
 
         # Define the best model
-        forest = RandomForestClassifier(max_depth=np.argmax(scores) + min_depth,
-                                        n_estimators=100)
+        forest = RandomForestClassifier(**forest.best_params_)
         forest.fit(self.X_train, self.y_train)
         return forest
 
@@ -104,19 +121,14 @@ class Predict:
                                                       presort='auto')
 
         # Check and determine best max depth
-        min_depth = 4
-        max_depth = 8
-        scores = []
-        depth_tree = np.arange(min_depth, max_depth)
-        for i in depth_tree:
-            grid = {'max_depth': i}
-            model = GradientBoosting(**grid)
-            model.fit(self.X_train, self.y_train)
-            scores.append(model.score(self.X_test, self.y_test))
+        min_depth = 5
+        max_depth = 15
+        parameters = {'max_depth': np.arange(min_depth, max_depth)}
+        gb_cv = GridSearchCV(GradientBoosting, parameters, cv=3, n_jobs=-1)
+        gb_cv.fit(X=self.X_train, y=self.y_train)
 
         # Return the best max depth
-        grid = {'max_depth': np.argmax(scores) + min_depth}
-        model = GradientBoosting(**grid)
+        model = GradientBoosting(**gb_cv.best_params_)
         model.fit(self.X_train, self.y_train)
         return model
 
@@ -131,19 +143,14 @@ class Predict:
         model = XGBClassifier()
 
         # Check and determine best max depth
-        min_depth = 4
-        max_depth = 10
-        scores = []
-        depth_tree = np.arange(min_depth, max_depth)
-        for i in depth_tree:
-            grid = {'max_depth': i}
-            model = XGBClassifier(**grid)
-            model.fit(self.X_train, self.y_train)
-            scores.append(model.score(self.X_test, self.y_test))
+        min_depth = 5
+        max_depth = 15
+        parameters = {'max_depth': np.arange(min_depth, max_depth)}
+        xgb_cv = GridSearchCV(model, parameters, cv=3, n_jobs=-1)
+        xgb_cv.fit(X=self.X_train, y=self.y_train)
 
         # Return the best max depth
-        grid = {'max_depth': np.argmax(scores) + min_depth}
-        model = XGBClassifier(**grid)
+        model = XGBClassifier(**xgb_cv.best_params_)
         model.fit(self.X_train, self.y_train)
         return model
 
