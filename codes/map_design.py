@@ -78,6 +78,5 @@ class displayMap:
                      str(perc_class_1) + '%')
 
         plt.legend()
-        plt.title('Geographical distribution of waterpoint by' +
+        plt.title('Geographical distribution of waterpoint by ' +
                   'functionality in Tanzania')
-        plt.show()

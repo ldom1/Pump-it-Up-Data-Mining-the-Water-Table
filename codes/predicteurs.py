@@ -69,7 +69,7 @@ class Predict:
         """Random Forest"""
         # Check and determine best max depth
         min_depth = 4
-        max_depth = 15
+        max_depth = 10
 
         parameters = {'max_depth': np.arange(min_depth, max_depth)}
         clf = GridSearchCV(tree.DecisionTreeClassifier(), parameters, cv=3,
@@ -85,7 +85,7 @@ class Predict:
         """Random Forest"""
         # Check and determine best max depth
         min_depth = 4
-        max_depth = 15
+        max_depth = 10
 
         parameters = {'max_depth': np.arange(min_depth, max_depth),
                       'n_estimators': np.arange(50, 200, 50)}
@@ -122,7 +122,7 @@ class Predict:
 
         # Check and determine best max depth
         min_depth = 5
-        max_depth = 15
+        max_depth = 10
         parameters = {'max_depth': np.arange(min_depth, max_depth)}
         gb_cv = GridSearchCV(GradientBoosting, parameters, cv=3, n_jobs=-1)
         gb_cv.fit(X=self.X_train, y=self.y_train)
@@ -143,41 +143,14 @@ class Predict:
         model = XGBClassifier()
 
         # Check and determine best max depth
-        min_depth = 5
+        min_depth = 10
         max_depth = 15
-        parameters = {'max_depth': np.arange(min_depth, max_depth)}
+        parameters = {'max_depth': np.arange(min_depth, max_depth),
+                      'min_child_weight': np.arange(1, 6, 2)}
         xgb_cv = GridSearchCV(model, parameters, cv=3, n_jobs=-1)
         xgb_cv.fit(X=self.X_train, y=self.y_train)
 
         # Return the best max depth
         model = XGBClassifier(**xgb_cv.best_params_)
         model.fit(self.X_train, self.y_train)
-        return model
-
-    def NeuralNetwork(self):
-        """GradientBoosting"""
-        # Split dataset into test / training
-        mean = self.X_train.mean(axis=0)
-        std = self.X_train.std(axis=0)
-
-        train_data = np.array((self.X_train - mean) / std)
-        train_labels = np.array(self.y_train)
-
-        # Build the model
-        nb_classe = len(np.unique(train_labels))
-
-        model = keras.Sequential([
-                keras.layers.Dense(128, activation=tf.nn.relu),
-                keras.layers.Dense(nb_classe, activation=tf.nn.softmax)
-                ])
-
-        # Compile the model
-        model.compile(optimizer=tf.train.AdamOptimizer(),
-                      loss='sparse_categorical_crossentropy',
-                      metrics=['accuracy'])
-
-        # Fit the model
-        nb_epochs = 20
-
-        model.fit(train_data, train_labels, epochs=nb_epochs)
         return model

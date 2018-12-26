@@ -8,6 +8,7 @@ Created on Tue Nov 27 22:30:43 2018
 import pandas as pd
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 from codes.map_design import displayMap
 from codes.predicteurs import Predict
 from codes.data_processing import processData
@@ -25,6 +26,7 @@ train_labels = pd.read_csv(path + '/data/training_set_labels.csv', sep=',')
 data = pd.merge(train_set, train_labels, how='inner')
 map_water_pumps = displayMap(data, 'status_group')
 map_water_pumps.display_map()
+plt.show()
 
 # Select the id to submit
 submit = pd.read_csv(path + '/data/SubmissionFormat.csv', sep=',')
@@ -134,11 +136,4 @@ to_submit['id'] = X_submit['id']
 to_submit['status_group'] = code.inverse_transform(GradientBoosting_predictions[0])
 # CSV
 to_submit.to_csv(path_submit + '/Submissions_gboost.csv', sep=",", header=True,
-                 index=False)
-# XGBoost
-to_submit = pd.DataFrame()
-to_submit['id'] = X_submit['id']
-to_submit['status_group'] = NeuralNetwork_predictions[0]
-# CSV
-to_submit.to_csv(path_submit + '/Submissions_nn.csv', sep=",", header=True,
                  index=False)
