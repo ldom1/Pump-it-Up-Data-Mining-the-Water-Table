@@ -22,26 +22,16 @@ class processData:
 
         return code.transform(self.data['status_group']), code
 
-    def select_categorial(self, categories):
-        """categorial data"""
-        for item in categories:
-            self.data[item] = pd.Categorical(self.data[item]).codes
-        return self.data
-
-    def select_numerical(self, numerical):
-        """numerical data"""
-        return self.data[numerical]
-
     def get_processData(self, categories, numerical):
         """processed data"""
-        df = processData.select_categorial(self, categories)
-        df[numerical] = processData.select_numerical(self, numerical)
+        df = self.data
         try:
             df = df.drop(['status_group'], axis=1)
+            return pd.get_dummies(df)
         except KeyError:
-            df = df
+            df = pd.get_dummies(df)
         try:
             labels, code = processData.define_label(self)
-            return df, labels, code
+            return pd.get_dummies(df), labels, code
         except KeyError:
-            return df
+            return pd.get_dummies(df)

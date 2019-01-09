@@ -2,6 +2,10 @@
 
 # Project related
 res.csv
+main.py
+main_unbalanced.py
+codes/data_processing.py
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
