@@ -6,15 +6,18 @@ Created on Tue Nov 27 21:48:16 2018
 @author: louisgiron
 """
 import numpy as np
+import pandas as pd
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn import model_selection
 import random as rd
-import tensorflow as tf
-from tensorflow import keras
 from xgboost import XGBClassifier
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+import time
 
 
 class Predict:
@@ -22,48 +25,68 @@ class Predict:
     def __init__(self, X, y):
         """class prediction"""
         r_s = rd.randint(0, 100)
-        (X_train, X_test,
-         y_train, y_test) = model_selection.train_test_split(X, y,
-                                                             test_size=0.33,
-                                                             random_state=r_s)
+        (X_train, X_valid,
+         y_train, y_valid) = model_selection.train_test_split(X, y,
+                                                              test_size=0.33,
+                                                              random_state=r_s)
         self.X_train = X_train
-        self.X_test = X_test
+        self.X_valid = X_valid
         self.y_train = y_train
-        self.y_test = y_test
+        self.y_valid = y_valid
 
-    def make_prediction(self, predictor, X_to_predict):
+    def make_prediction(self, predictor, X_to_predict, display=True):
+
+        def plot_cnf_matrix(pred_valid, name):
+            try:
+                labels = ["Functionnal", "Need reparations", "Non functionnal"]
+                cfn = confusion_matrix(self.y_valid, pred_valid,
+                                       labels=labels)
+                cfn = cfn/len(pred_valid)*100
+                df_cm = pd.DataFrame(cfn, index=[i for i in labels],
+                                     columns=[i for i in labels])
+            except Exception:
+                cfn = confusion_matrix(self.y_valid, pred_valid)
+                cfn = cfn/len(pred_valid)*100
+                df_cm = pd.DataFrame(cfn)
+            plt.figure(figsize=(10, 7))
+            plt.title('Confusion matrix - ' + str(name) + ' classifier (%)')
+            sns.heatmap(df_cm, annot=True)
+            plt.show()
 
         if predictor == 'ArbreDecision':
             pred = Predict.ArbreDecision(self).predict(X_to_predict)
-            score = Predict.ArbreDecision(self).score(self.X_test, self.y_test)
+            pred_valid = Predict.ArbreDecision(self).predict(self.X_valid)
+            score = Predict.ArbreDecision(self).score(self.X_valid,
+                                                      self.y_valid)
+            if display:
+                plot_cnf_matrix(pred_valid, 'Decision Tree')
             return pred, score
 
         if predictor == 'RandomForest':
             pred = Predict.RandomForest(self).predict(X_to_predict)
-            score = Predict.RandomForest(self).score(self.X_test, self.y_test)
+            pred_valid = Predict.RandomForest(self).predict(self.X_valid)
+            score = Predict.RandomForest(self).score(self.X_valid,
+                                                     self.y_valid)
+            if display:
+                plot_cnf_matrix(pred_valid, 'Random Forest')
             return pred, score
 
         if predictor == 'GradientBoosting':
             pred = Predict.RandomForest(self).predict(X_to_predict)
-            score = Predict.RandomForest(self).score(self.X_test, self.y_test)
+            pred_valid = Predict.RandomForest(self).predict(self.X_valid)
+            score = Predict.RandomForest(self).score(self.X_valid,
+                                                     self.y_valid)
+            if display:
+                plot_cnf_matrix(pred_valid, 'Gradient Boosting')
             return pred, score
 
         if predictor == 'XgBoost':
             pred = Predict.XgBoost(self).predict(X_to_predict)
-            score = Predict.XgBoost(self).score(self.X_test, self.y_test)
+            pred_valid = Predict.XgBoost(self).predict(self.X_valid)
+            score = Predict.XgBoost(self).score(self.X_valid, self.y_valid)
+            if display:
+                plot_cnf_matrix(pred_valid, 'XgBoost')
             return pred, score
-
-        if predictor == 'NeuralNetwork':
-            mean = self.X_train.mean(axis=0)
-            std = self.X_train.std(axis=0)
-            test_data = np.array((self.X_test - mean) / std)
-            test_labels = np.array(self.y_test)
-            pred = Predict.NeuralNetwork(self).predict(X_to_predict)
-            pred = np.argmax(pred, axis=1)
-            (test_loss,
-             test_acc) = Predict.NeuralNetwork(self).evaluate(test_data,
-                                                              test_labels)
-            return pred, test_acc
 
     def ArbreDecision(self):
         """Random Forest"""
@@ -133,7 +156,7 @@ class Predict:
         return model
 
     def XgBoost(self):
-        """GradientBoosting"""
+        """XgBoost"""
         # Define parameters
         param = {}
         param['booster'] = 'gbtree'

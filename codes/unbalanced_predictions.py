@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from imblearn.over_sampling import SMOTE
 
-from codes.predicteurs import Predict
+from .predicteurs import Predict
 
 
 class unbalancedPrediction:
@@ -27,8 +27,8 @@ class unbalancedPrediction:
         self.feature_name = labels
 
     def predict_class_1(self):
-        """Predict the first classes 0 or 2, within the class 0, there are
-        the classes 0 and 1"""
+        """Predict the first classes 0 or 1, within the class 0, there are
+        the classes 0 and 2"""
         self.x_data['Class 1'] = self.x_data['labels'].apply(lambda x: 1 if
                                                              x == 1 else 0)
 
@@ -41,10 +41,16 @@ class unbalancedPrediction:
         df_score = pd.DataFrame()
         df_score['labels'] = np.array(self.x_data['labels'])
 
+        # Indication of plotting
+        print('2 classes approach:')
+        print('----')
+        print('Step 1:')
+        print('predicting class 0 (i.e class 0 and 2) and class 1')
+
         df_pred['Class 1'] = predicteur.make_prediction(self.predictor,
                                                         self.x_predict)[0]
         df_score['Class 1'] = predicteur.make_prediction(self.predictor,
-                                                         X_1)[0]
+                                                         X_1, display=False)[0]
         return df_pred, df_score
 
     def predict_class_2(self):
@@ -57,14 +63,17 @@ class unbalancedPrediction:
         y_2 = df_temp['labels']
 
         # Smote method to adress the issue of unbalanced data
-        sm = SMOTE(random_state=2)
+        '''sm = SMOTE(random_state=2)
         X_2_sm, y_2_sm = sm.fit_sample(X_2, y_2.ravel())
         X_2_sm = pd.DataFrame(X_2_sm)
-        X_2_sm.columns = self.feature_name
+        X_2_sm.columns = self.feature_name'''
 
         # Prediction on the values on balanced
-        predicteur = Predict(X_2_sm, y_2_sm)
-        y2_score = predicteur.make_prediction(self.predictor, X_2)[0]
+        print('Step 2:')
+        print('predicting class 0 or 2 within class 0')
+        predicteur = Predict(X_2, y_2)
+        y2_score = predicteur.make_prediction(self.predictor, X_2,
+                                              display=False)[0]
         y2_pred = predicteur.make_prediction(self.predictor, self.x_predict)[0]
 
         # Merge on the id
