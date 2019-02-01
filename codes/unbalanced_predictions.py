@@ -28,9 +28,9 @@ class unbalancedPrediction:
 
     def predict_class_1(self):
         """Predict the first classes 0 or 1, within the class 0, there are
-        the classes 0 and 2"""
-        self.x_data['Class 1'] = self.x_data['labels'].apply(lambda x: 1 if
-                                                             x == 1 else 0)
+        the classes 1 and 2"""
+        self.x_data['Class 1'] = self.x_data['labels'].apply(lambda x: 0 if
+                                                             x == 0 else 1)
 
         X_1 = self.x_data[self.x_data.columns[:-2]]
         y_1 = self.x_data['Class 1']
@@ -45,7 +45,7 @@ class unbalancedPrediction:
         print('2 classes approach:')
         print('----')
         print('Step 1:')
-        print('predicting class 0 (i.e class 0 and 2) and class 1')
+        print('predicting class 0 and class 1 (i.e class 1 and 2)')
 
         df_pred['Class 1'] = predicteur.make_prediction(self.predictor,
                                                         self.x_predict)[0]
@@ -55,9 +55,9 @@ class unbalancedPrediction:
 
     def predict_class_2(self):
         """Predict the classes within the class 0, where there are
-        the classes 0 and 1"""
+        the classes 1 and 2"""
         df_pred, df_score = unbalancedPrediction.predict_class_1(self)
-        df_temp = self.x_data[self.x_data['labels'] != 1]
+        df_temp = self.x_data[self.x_data['labels'] != 0]
 
         X_2 = df_temp[df_temp.columns[:-2]]
         y_2 = df_temp['labels']
@@ -70,7 +70,7 @@ class unbalancedPrediction:
 
         # Prediction on the values on balanced
         print('Step 2:')
-        print('predicting class 0 or 2 within class 0')
+        print('predicting class 1 or 2 within class 1')
         predicteur = Predict(X_2, y_2)
         y2_score = predicteur.make_prediction(self.predictor, X_2,
                                               display=False)[0]
@@ -93,7 +93,7 @@ class unbalancedPrediction:
 
         # Definition de la prédiction
         def concat_predict_pred(class_1, class_2):
-            if class_1 == 1:
+            if class_1 == 0:
                 return int(class_1)
             else:
                 return int(class_2)

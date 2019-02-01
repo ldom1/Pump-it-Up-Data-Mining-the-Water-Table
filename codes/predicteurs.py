@@ -110,9 +110,7 @@ class Predict:
         max_depth = 10
 
         parameters = {'max_depth': np.arange(min_depth, max_depth),
-                      'n_estimators': np.arange(50, 200, 50),
-                      'class_weight': np.array(['balanced',
-                                                'balanced_subsample'])}
+                      'n_estimators': np.arange(50, 200, 50)}
         forest = GridSearchCV(RandomForestClassifier(), parameters, cv=3,
                               n_jobs=-1)
         forest.fit(X=self.X_train, y=self.y_train)
@@ -147,9 +145,7 @@ class Predict:
         # Check and determine best max depth
         min_depth = 5
         max_depth = 10
-        parameters = {'max_depth': np.arange(min_depth, max_depth),
-                      'class_weight': np.array(['balanced',
-                                                'balanced_subsample'])}
+        parameters = {'max_depth': np.arange(min_depth, max_depth)}
         gb_cv = GridSearchCV(GradientBoosting, parameters, cv=3, n_jobs=-1)
         gb_cv.fit(X=self.X_train, y=self.y_train)
 
@@ -173,8 +169,7 @@ class Predict:
         max_depth = 15
         parameters = {'max_depth': np.arange(min_depth, max_depth),
                       'min_child_weight': np.arange(1, 6, 2),
-                      'class_weight': np.array(['balanced',
-                                                'balanced_subsample'])}
+                      'class_weight': np.array(['balanced'])}
         xgb_cv = GridSearchCV(model, parameters, cv=3, n_jobs=-1)
         xgb_cv.fit(X=self.X_train, y=self.y_train)
 
